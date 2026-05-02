@@ -251,13 +251,59 @@ function RiddleReveal({ riddle }) {
       )}
       {solved && (
         <div className="answer-reveal">
-          <h2>{riddle.successTitle}</h2>
-          <p>{riddle.successMessage}</p>
+          {riddle.ticket ? (
+            <TicketReveal ticket={riddle.ticket} />
+          ) : (
+            <>
+              <h2>{riddle.successTitle}</h2>
+              <p>{riddle.successMessage}</p>
+            </>
+          )}
           <a className="secondary-action" href={riddle.revealUrl} target="_blank" rel="noreferrer">
             {riddle.revealLabel}
           </a>
         </div>
       )}
+    </div>
+  );
+}
+
+function TicketReveal({ ticket }) {
+  return (
+    <div className="ticket-reveal">
+      <div className="ticket-stub">
+        <span>{ticket.eyebrow}</span>
+      </div>
+      <div className="ticket-main">
+        <p className="kicker">{ticket.eyebrow}</p>
+        <h2>{ticket.title}</h2>
+        {ticket.image && (
+          <img className="ticket-photo" src={ticket.image} alt={ticket.imageAlt || ''} />
+        )}
+        <dl>
+          <div>
+            <dt>Admit</dt>
+            <dd>{ticket.admit}</dd>
+          </div>
+          <div>
+            <dt>Date</dt>
+            <dd>{ticket.date}</dd>
+          </div>
+          <div>
+            <dt>Time</dt>
+            <dd>{ticket.time}</dd>
+          </div>
+          <div>
+            <dt>Location</dt>
+            <dd>{ticket.location}</dd>
+          </div>
+          <div>
+            <dt>Address</dt>
+            <dd>{ticket.address}</dd>
+          </div>
+        </dl>
+        <p>{ticket.note}</p>
+      </div>
     </div>
   );
 }

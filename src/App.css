@@ -476,6 +476,114 @@ h2 {
   margin: 0;
 }
 
+.ticket-reveal {
+  background: linear-gradient(135deg, #f8df92, #b8862f);
+  border-radius: 8px;
+  color: #151008;
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  overflow: hidden;
+  position: relative;
+}
+
+.ticket-reveal::before,
+.ticket-reveal::after {
+  background: #0f0c08;
+  border-radius: 50%;
+  content: '';
+  height: 24px;
+  left: 30px;
+  position: absolute;
+  width: 24px;
+  z-index: 2;
+}
+
+.ticket-reveal::before {
+  top: -12px;
+}
+
+.ticket-reveal::after {
+  bottom: -12px;
+}
+
+.ticket-stub {
+  align-items: center;
+  border-right: 2px dashed rgba(21, 16, 8, 0.42);
+  display: flex;
+  justify-content: center;
+  min-height: 230px;
+  padding: 10px 0;
+}
+
+.ticket-stub span {
+  font-size: 0.7rem;
+  font-weight: 950;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  transform: rotate(-90deg);
+  white-space: nowrap;
+}
+
+.ticket-main {
+  background:
+    linear-gradient(90deg, rgba(21, 16, 8, 0.08) 1px, transparent 1px),
+    rgba(255, 246, 216, 0.52);
+  background-size: 14px 14px;
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.ticket-main .kicker {
+  color: #5b4217;
+}
+
+.ticket-main h2 {
+  color: #151008;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.7rem;
+  line-height: 1;
+}
+
+.ticket-photo {
+  aspect-ratio: 4 / 3;
+  border: 2px solid rgba(21, 16, 8, 0.32);
+  border-radius: 6px;
+  box-shadow: 4px 4px 0 rgba(21, 16, 8, 0.18);
+  display: block;
+  object-fit: cover;
+  width: 100%;
+}
+
+.ticket-main dl {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.ticket-main dl div {
+  border-top: 1px solid rgba(21, 16, 8, 0.2);
+  padding-top: 8px;
+}
+
+.ticket-main dt {
+  color: #5b4217;
+  font-size: 0.68rem;
+  font-weight: 950;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.ticket-main dd {
+  font-weight: 900;
+  margin: 2px 0 0;
+}
+
+.ticket-main p {
+  color: #2f240f !important;
+  font-weight: 800;
+}
+
 .photo-frame,
 .memory-card {
   background: #f6e8bd;
