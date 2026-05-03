@@ -390,6 +390,76 @@ h2 {
   padding: 14px;
 }
 
+.choice-card {
+  background: linear-gradient(180deg, rgba(244, 210, 122, 0.1), rgba(0, 0, 0, 0.18));
+  border: 1px solid rgba(244, 210, 122, 0.26);
+  border-radius: 8px;
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+  padding: 16px;
+}
+
+.choice-card h2 {
+  color: var(--gold-bright);
+  font-size: 1.35rem;
+  margin: 0;
+}
+
+.choice-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.choice-grid button {
+  background: #090705;
+  border: 1px solid rgba(244, 210, 122, 0.3);
+  border-radius: 999px;
+  color: var(--text);
+  font-weight: 900;
+  min-height: 44px;
+  padding: 0 10px;
+}
+
+.choice-grid button.selected {
+  background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+  color: #151008;
+}
+
+.prescription-slip {
+  background:
+    linear-gradient(90deg, rgba(21, 16, 8, 0.08) 1px, transparent 1px),
+    #f7e6b6;
+  background-size: 18px 18px;
+  border: 1px solid rgba(21, 16, 8, 0.28);
+  border-radius: 8px;
+  box-shadow: 4px 4px 0 rgba(216, 173, 69, 0.16);
+  color: #151008;
+  padding: 15px;
+}
+
+.prescription-slip span {
+  color: #5b4217;
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 950;
+  letter-spacing: 0.12em;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.prescription-slip p {
+  color: #151008 !important;
+  font-weight: 900;
+}
+
+.choice-footer {
+  color: var(--gold-bright) !important;
+  font-size: 0.92rem !important;
+  font-weight: 800;
+}
+
 .riddle-card {
   background: linear-gradient(180deg, rgba(244, 210, 122, 0.11), rgba(244, 210, 122, 0.04));
   border: 1px solid rgba(244, 210, 122, 0.28);

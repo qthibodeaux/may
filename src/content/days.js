@@ -72,10 +72,37 @@ export const days = [
     day: 3,
     date: '2026-05-03',
     type: 'mission',
-    title: 'Your First Mission',
+    title: 'The Comfort Prescription',
     message:
-      'Small mission, big birthday-month energy. You get to choose the mood for tonight.',
-    prompt: 'Choose one: cozy movie, dessert run, or music while we cook.',
+      'No big event today. Just a little care plan from the birthday-month department.',
+    prompt:
+      'Today’s official prescription: one small treat, one deep breath, and absolutely no guilt.',
+    choiceReveal: {
+      title: 'Choose your prescription for tonight',
+      options: [
+        {
+          label: 'Sweet',
+          result:
+            'Approved: one sweet treat, chosen by you, with no practical justification required.',
+        },
+        {
+          label: 'Salty',
+          result:
+            'Approved: one salty snack run and full permission to call it part of the care plan.',
+        },
+        {
+          label: 'Cozy',
+          result:
+            'Approved: soft clothes, low lights, and one episode, movie, or quiet moment that asks nothing from you.',
+        },
+        {
+          label: 'Surprise Me',
+          result:
+            'Approved: husband chooses one small comfort and delivers it with birthday-month seriousness.',
+        },
+      ],
+      footer: 'Prescription may be refilled as needed.',
+    },
     storyChapter: 3,
   },
   {

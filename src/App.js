@@ -193,6 +193,7 @@ function DayView({ day, todayKey }) {
             )}
             <p className="message">{day.message}</p>
             {day.prompt && <div className="mission-box">{day.prompt}</div>}
+            {day.choiceReveal && <ChoiceReveal choiceReveal={day.choiceReveal} />}
             {day.riddle && <RiddleReveal riddle={day.riddle} />}
           </article>
 
@@ -207,6 +208,34 @@ function DayView({ day, todayKey }) {
         </>
       )}
     </section>
+  );
+}
+
+function ChoiceReveal({ choiceReveal }) {
+  const [selected, setSelected] = useState(choiceReveal.options[0]);
+
+  return (
+    <div className="choice-card">
+      <p className="kicker">Today&apos;s mission</p>
+      <h2>{choiceReveal.title}</h2>
+      <div className="choice-grid" role="group" aria-label={choiceReveal.title}>
+        {choiceReveal.options.map((option) => (
+          <button
+            className={selected.label === option.label ? 'selected' : ''}
+            key={option.label}
+            type="button"
+            onClick={() => setSelected(option)}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+      <div className="prescription-slip">
+        <span>Doctor&apos;s Orders</span>
+        <p>{selected.result}</p>
+      </div>
+      <p className="choice-footer">{choiceReveal.footer}</p>
+    </div>
   );
 }
 
