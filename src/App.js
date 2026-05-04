@@ -1,4 +1,4 @@
-import { useState, useSyncExternalStore } from 'react';
+import { useState, useEffect, useRef, useSyncExternalStore } from 'react';
 import './App.css';
 import { days } from './content/days';
 import { storyChapters } from './content/story';
@@ -58,6 +58,10 @@ function App() {
   const selectedDay = section === 'day' ? days.find((day) => day.day === Number(id)) : null;
   const selectedChapter =
     section === 'story' && id ? storyChapters.find((chapter) => chapter.chapter === Number(id)) : null;
+
+  if (section === 'reader') {
+    return <ReaderView todayKey={todayKey} />;
+  }
 
   return (
     <main className="app-shell">
@@ -474,12 +478,407 @@ function LockedPanel({ label, date }) {
   );
 }
 
+const FONT_SIZES = { sm: '0.88rem', md: '1.05rem', lg: '1.28rem' };
+
+const BOOKMARK_KEY = 'reader-bookmark';
+function saveBookmark(chapterNum, fontSize) {
+  try { localStorage.setItem(BOOKMARK_KEY, JSON.stringify({ chapterNum, fontSize })); } catch {}
+}
+function loadBookmark() {
+  try { return JSON.parse(localStorage.getItem(BOOKMARK_KEY)) ?? null; } catch { return null; }
+}
+const V_PAD = 128;
+
+function splitSentences(text) {
+  const parts = text.match(/[^.!?]+(?:[.!?]+['")\u2019]?\s*|$)/g);
+  if (!parts) return [text];
+  const result = parts.map((s) => s.trim()).filter(Boolean);
+  return result.length ? result : [text];
+}
+
+function unitsToParagraphs(units) {
+  const groups = [];
+  for (const u of units) {
+    const last = groups[groups.length - 1];
+    if (last && last.pi === u.pi) {
+      last.sentences.push(u.text);
+    } else {
+      groups.push({ pi: u.pi, sentences: [u.text] });
+    }
+  }
+  return groups.map((g) => g.sentences.join(' '));
+}
+
+function buildHTML(units) {
+  return unitsToParagraphs(units)
+    .map((p) => `<p style="margin:0 0 1.4em">${p}</p>`)
+    .join('');
+}
+
+// Measure a single chapter's paragraphs into content pages, returns page objects
+function measureChapterPages(chapter, fontSize, wrap, availH) {
+  const units = [];
+  for (let pi = 0; pi < chapter.body.length; pi++) {
+    for (const s of splitSentences(chapter.body[pi])) {
+      units.push({ text: s, pi });
+    }
+  }
+
+  const contentPages = [];
+  let bucket = [];
+
+  for (const unit of units) {
+    const probe = [...bucket, unit];
+    wrap.innerHTML = buildHTML(probe);
+    if (wrap.scrollHeight > availH && bucket.length > 0) {
+      contentPages.push({ type: 'content', chapter: chapter.chapter, chapterTitle: chapter.title, paragraphs: unitsToParagraphs(bucket) });
+      bucket = [unit];
+    } else {
+      bucket = probe;
+    }
+  }
+  if (bucket.length) {
+    contentPages.push({ type: 'content', chapter: chapter.chapter, chapterTitle: chapter.title, paragraphs: unitsToParagraphs(bucket) });
+  }
+  return contentPages;
+}
+
+// Build the full book page array across all unlocked chapters
+function buildBook(unlockedChapters, allChapters, fontSize) {
+  const availH = window.innerHeight - V_PAD;
+  const availW = Math.min(window.innerWidth - 56, 680);
+
+  const wrap = document.createElement('div');
+  wrap.style.cssText = [
+    'position:fixed', 'top:-9999px', 'left:0',
+    `width:${availW}px`, `font-size:${FONT_SIZES[fontSize]}`,
+    'line-height:1.8', 'visibility:hidden', 'font-family:inherit',
+  ].join(';');
+  document.body.appendChild(wrap);
+
+  const pages = [];
+
+  // Front matter
+  pages.push({ type: 'cover' });
+  pages.push({ type: 'book-title' });
+
+  // TOC entry map: chapterNumber → global page index of its title card
+  const tocMap = {};
+
+  for (const chapter of unlockedChapters) {
+    tocMap[chapter.chapter] = pages.length;
+    pages.push({ type: 'chapter-title', chapter: chapter.chapter, chapterTitle: chapter.title });
+    const content = measureChapterPages(chapter, fontSize, wrap, availH);
+    for (const p of content) pages.push(p);
+  }
+
+  document.body.removeChild(wrap);
+  return { pages, tocMap };
+}
+
+function ReaderView({ todayKey }) {
+  const unlockedChapters = storyChapters.filter((c) => c.date <= todayKey);
+
+  const [fontSize, setFontSize] = useState(() => loadBookmark()?.fontSize ?? 'md');
+  const [book, setBook] = useState(null); // { pages, tocMap }
+  const [pageIndex, setPageIndex] = useState(0);
+  const [overlayVisible, setOverlayVisible] = useState(false);
+  const [tocOpen, setTocOpen] = useState(false);
+  const [dragX, setDragX] = useState(0);
+  const [snapping, setSnapping] = useState(false);
+
+  const shellRef = useRef(null);
+  const touchStartX = useRef(null);
+  const touchStartY = useRef(null);
+  const isDragging = useRef(false);
+  const pageIndexRef = useRef(pageIndex);
+  const bookRef = useRef(book);
+  const bookmarkApplied = useRef(false);
+  useEffect(() => { pageIndexRef.current = pageIndex; }, [pageIndex]);
+  useEffect(() => { bookRef.current = book; }, [book]);
+
+  // Rebuild book whenever font size changes; restore bookmark on first load
+  useEffect(() => {
+    const currentChapter = book ? (book.pages[pageIndex]?.chapter ?? null) : null;
+    setBook(null);
+    setDragX(0);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const built = buildBook(unlockedChapters, storyChapters, fontSize);
+        if (!bookmarkApplied.current) {
+          bookmarkApplied.current = true;
+          const bm = loadBookmark();
+          const target = (bm?.chapterNum && built.tocMap[bm.chapterNum] !== undefined)
+            ? built.tocMap[bm.chapterNum]
+            : 0;
+          setPageIndex(target);
+        } else {
+          // Font size changed — land back on the same chapter
+          if (currentChapter && built.tocMap[currentChapter] !== undefined) {
+            setPageIndex(built.tocMap[currentChapter]);
+          } else {
+            setPageIndex(0);
+          }
+        }
+        setBook(built);
+      });
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fontSize, todayKey]);
+
+  // Persist bookmark on every page turn
+  useEffect(() => {
+    if (!book) return;
+    const pg = book.pages[pageIndex];
+    saveBookmark(pg?.chapter ?? null, fontSize);
+  }, [pageIndex, book, fontSize]);
+
+  // Touch handlers attached imperatively for passive:false
+  useEffect(() => {
+    const el = shellRef.current;
+    if (!el || !book) return;
+
+    function onTouchStart(e) {
+      touchStartX.current = e.touches[0].clientX;
+      touchStartY.current = e.touches[0].clientY;
+      isDragging.current = false;
+      setSnapping(false);
+    }
+
+    function onTouchMove(e) {
+      if (touchStartX.current === null) return;
+      const dx = e.touches[0].clientX - touchStartX.current;
+      const dy = e.touches[0].clientY - touchStartY.current;
+      if (!isDragging.current) {
+        if (Math.abs(dy) > Math.abs(dx)) { touchStartX.current = null; return; }
+        if (Math.abs(dx) > 8) isDragging.current = true;
+      }
+      if (isDragging.current) { e.preventDefault(); setDragX(dx); }
+    }
+
+    function onTouchEnd(e) {
+      if (touchStartX.current === null) return;
+      const dx = e.changedTouches[0].clientX - touchStartX.current;
+      touchStartX.current = null;
+
+      if (!isDragging.current) {
+        if (!e.target.closest('button, a')) {
+          setTocOpen(false);
+          setOverlayVisible((v) => !v);
+        }
+        return;
+      }
+
+      const threshold = window.innerWidth * 0.35;
+      const curIndex = pageIndexRef.current;
+      const totalPages = bookRef.current.pages.length;
+      setSnapping(true);
+      setDragX(0);
+      setOverlayVisible(false);
+      setTocOpen(false);
+
+      if (dx < -threshold && curIndex < totalPages - 1) {
+        setPageIndex(curIndex + 1);
+      } else if (dx > threshold && curIndex > 0) {
+        setPageIndex(curIndex - 1);
+      }
+      setTimeout(() => setSnapping(false), 350);
+    }
+
+    el.addEventListener('touchstart', onTouchStart, { passive: true });
+    el.addEventListener('touchmove', onTouchMove, { passive: false });
+    el.addEventListener('touchend', onTouchEnd, { passive: true });
+    return () => {
+      el.removeEventListener('touchstart', onTouchStart);
+      el.removeEventListener('touchmove', onTouchMove);
+      el.removeEventListener('touchend', onTouchEnd);
+    };
+  }, [book]);
+
+  function goToPage(newIdx) {
+    setSnapping(true);
+    setPageIndex(newIdx);
+    setTimeout(() => setSnapping(false), 350);
+  }
+
+  if (unlockedChapters.length === 0) {
+    return (
+      <div className="reader-shell reader-empty">
+        <p>No chapters unlocked yet.</p>
+        <a href="#/">Back</a>
+      </div>
+    );
+  }
+
+  const pages = book ? book.pages : null;
+  const totalPages = pages ? pages.length : 0;
+  const W = window.innerWidth;
+  const currentPage = pages ? pages[pageIndex] : null;
+  const currentChapterTitle = currentPage?.chapterTitle ?? null;
+  const currentChapterNum = currentPage?.chapter ?? null;
+
+  const visibleIndices = pages
+    ? [pageIndex - 1, pageIndex, pageIndex + 1].filter((i) => i >= 0 && i < totalPages)
+    : [];
+
+  return (
+    <div className="reader-shell" ref={shellRef}>
+
+      {/* Spinner */}
+      {!book && (
+        <div className="reader-loading">
+          <div className="reader-spinner" />
+        </div>
+      )}
+
+      {/* Page stage */}
+      {book && (
+        <div className="reader-stage">
+          {visibleIndices.map((idx) => {
+            const pg = pages[idx];
+            const offset = (idx - pageIndex) * W + dragX;
+            const cls = `reader-page${snapping ? ' reader-page-snap' : ''}`;
+
+            if (pg.type === 'cover') {
+              return (
+                <div key={idx} className={`${cls} reader-page-cover`} style={{ transform: `translateX(${offset}px)` }}>
+                  <p className="reader-cover-eyebrow">A story in 17 parts</p>
+                  <h1 className="reader-cover-title">Bae's Anatomy</h1>
+                  <p className="reader-cover-sub">For Jessica</p>
+                </div>
+              );
+            }
+
+            if (pg.type === 'book-title') {
+              return (
+                <div key={idx} className={`${cls} reader-page-booktitle`} style={{ transform: `translateX(${offset}px)` }}>
+                  <h2 className="reader-booktitle-title">Bae's Anatomy</h2>
+                  <p className="reader-booktitle-author">A Birthday Month Story</p>
+                  <p className="reader-booktitle-dedication">For the woman who makes everything worth writing down.</p>
+                </div>
+              );
+            }
+
+            if (pg.type === 'chapter-title') {
+              return (
+                <div key={idx} className={`${cls} reader-page-chaptertitle`} style={{ transform: `translateX(${offset}px)` }}>
+                  <p className="reader-chaptertitle-num">Chapter {pg.chapter}</p>
+                  <h2 className="reader-chaptertitle-name">{pg.chapterTitle}</h2>
+                </div>
+              );
+            }
+
+            // content page
+            return (
+              <div key={idx} className={cls} style={{ transform: `translateX(${offset}px)`, fontSize: FONT_SIZES[fontSize] }}>
+                <div className="reader-text">
+                  {pg.paragraphs.map((para, i) => <p key={i}>{para}</p>)}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* TOC sheet */}
+      {tocOpen && book && (
+        <div className="reader-toc-sheet" onClick={() => setTocOpen(false)}>
+          <div className="reader-toc-panel" onClick={(e) => e.stopPropagation()}>
+            <div className="reader-toc-header">
+              <span>Table of Contents</span>
+              <button type="button" className="reader-toc-close" onClick={() => setTocOpen(false)}>✕</button>
+            </div>
+            <div className="reader-toc-list">
+              <button type="button" className="reader-toc-row" onClick={() => { setPageIndex(0); setTocOpen(false); setOverlayVisible(false); }}>
+                <span className="reader-toc-label">Cover</span>
+              </button>
+              <button type="button" className="reader-toc-row" onClick={() => { setPageIndex(1); setTocOpen(false); setOverlayVisible(false); }}>
+                <span className="reader-toc-label">Title Page</span>
+              </button>
+              {storyChapters.map((c) => {
+                const locked = c.date > todayKey;
+                const globalIdx = book.tocMap[c.chapter];
+                return (
+                  <button
+                    key={c.chapter}
+                    type="button"
+                    className={`reader-toc-row${locked ? ' reader-toc-locked' : ''}${currentChapterNum === c.chapter ? ' reader-toc-active' : ''}`}
+                    disabled={locked}
+                    onClick={() => { if (!locked) { setPageIndex(globalIdx); setTocOpen(false); setOverlayVisible(false); } }}
+                  >
+                    <span className="reader-toc-num">Chapter {c.chapter}</span>
+                    <span className="reader-toc-label">{locked ? '—' : c.title}</span>
+                    {locked && <span className="reader-toc-lock">🔒</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Overlay */}
+      {overlayVisible && book && (
+        <div className="reader-overlay">
+          <div className="reader-top-bar">
+            <a className="reader-back-btn" href="#/">← Back</a>
+            <span className="reader-chapter-label">
+              {currentChapterNum ? `Ch. ${currentChapterNum}` : 'Bae\'s Anatomy'}
+            </span>
+            <div className="reader-font-btns">
+              {['sm', 'md', 'lg'].map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  className={`reader-font-btn reader-font-${s}${fontSize === s ? ' active' : ''}`}
+                  onClick={() => { setFontSize(s); setOverlayVisible(false); }}
+                >
+                  A
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="reader-bottom-bar">
+            <div className="reader-page-nav">
+              <button
+                type="button"
+                className="reader-nav-btn"
+                disabled={pageIndex === 0}
+                onClick={() => goToPage(Math.max(pageIndex - 1, 0))}
+              >‹</button>
+              <span className="reader-page-count">{pageIndex + 1} / {totalPages}</span>
+              <button
+                type="button"
+                className="reader-nav-btn"
+                disabled={pageIndex === totalPages - 1}
+                onClick={() => goToPage(Math.min(pageIndex + 1, totalPages - 1))}
+              >›</button>
+            </div>
+            <button
+              type="button"
+              className="reader-toc-btn"
+              onClick={() => { setTocOpen(true); setOverlayVisible(false); }}
+            >
+              <span className="reader-toc-btn-chapter">
+                {currentChapterTitle ?? 'Bae\'s Anatomy'}
+              </span>
+              <span className="reader-toc-btn-label">Table of Contents</span>
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function BottomNav() {
   return (
     <nav className="bottom-nav" aria-label="Main navigation">
       <a href="#/">Path</a>
       <a href="#/story">Book</a>
       <a href="#/memories">Photos</a>
+      <a href="#/reader" className="nav-reader-tab">Read ✦</a>
     </nav>
   );
 }
