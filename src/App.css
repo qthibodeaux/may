@@ -390,6 +390,69 @@ h2 {
   padding: 14px;
 }
 
+.joke-card {
+  background: linear-gradient(180deg, rgba(244, 210, 122, 0.1), rgba(0, 0, 0, 0.18));
+  border: 1px solid rgba(244, 210, 122, 0.26);
+  border-radius: 8px;
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+  padding: 16px;
+  text-align: center;
+}
+
+.joke-item {
+  display: grid;
+  gap: 10px;
+}
+
+.joke-item-stacked {
+  border-top: 1px solid rgba(244, 210, 122, 0.18);
+  padding-top: 14px;
+}
+
+.joke-setup {
+  color: var(--text);
+  font-size: 1.05rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+.joke-punchline {
+  color: var(--gold-bright);
+  font-size: 1.1rem;
+  font-weight: 900;
+  margin: 0;
+}
+
+.joke-footer {
+  color: var(--text);
+  font-size: 0.88rem;
+  font-style: italic;
+  margin: 0;
+  opacity: 0.75;
+}
+
+.joke-reveal-btn {
+  background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+  border: none;
+  border-radius: 999px;
+  color: #151008;
+  cursor: pointer;
+  font-weight: 900;
+  justify-self: center;
+  min-height: 44px;
+  padding: 0 22px;
+}
+
+.joke-reveal-corny {
+  background: transparent;
+  border: 1px solid rgba(244, 210, 122, 0.35);
+  color: var(--text);
+  font-size: 0.88rem;
+  opacity: 0.8;
+}
+
 .choice-card {
   background: linear-gradient(180deg, rgba(244, 210, 122, 0.1), rgba(0, 0, 0, 0.18));
   border: 1px solid rgba(244, 210, 122, 0.26);

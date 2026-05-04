@@ -193,6 +193,7 @@ function DayView({ day, todayKey }) {
             )}
             <p className="message">{day.message}</p>
             {day.prompt && <div className="mission-box">{day.prompt}</div>}
+            {day.jokes && <JokeCard jokes={day.jokes} />}
             {day.choiceReveal && <ChoiceReveal choiceReveal={day.choiceReveal} />}
             {day.riddle && <RiddleReveal riddle={day.riddle} />}
           </article>
@@ -208,6 +209,52 @@ function DayView({ day, todayKey }) {
         </>
       )}
     </section>
+  );
+}
+
+function JokeCard({ jokes }) {
+  // how many jokes are visible, and which ones have been revealed
+  const [visible, setVisible] = useState(1);
+  const [revealed, setRevealed] = useState([]);
+  const isRevealed = (i) => revealed.includes(i);
+  const isLast = visible >= jokes.length;
+
+  function handleReveal(i) {
+    setRevealed((r) => [...r, i]);
+  }
+
+  function handleMore() {
+    setVisible((v) => v + 1);
+  }
+
+  return (
+    <div className="joke-card">
+      <p className="kicker">Birthday Month Dad Joke</p>
+      {jokes.slice(0, visible).map((joke, i) => (
+        <div key={i} className={`joke-item${i > 0 ? ' joke-item-stacked' : ''}`}>
+          <p className="joke-setup">{joke.setup}</p>
+          {isRevealed(i) ? (
+            <>
+              <p className="joke-punchline">{joke.punchline}</p>
+              {i === jokes.length - 1 && joke.footer && (
+                <p className="joke-footer">{joke.footer}</p>
+              )}
+              {i === visible - 1 && !isLast && (
+                <button type="button" className="joke-reveal-btn joke-reveal-corny" onClick={handleMore}>
+                  Ok I know that was corny... but I got one more
+                </button>
+              )}
+            </>
+          ) : (
+            i === visible - 1 && (
+              <button type="button" className="joke-reveal-btn" onClick={() => handleReveal(i)}>
+                Reveal the punchline
+              </button>
+            )
+          )}
+        </div>
+      ))}
+    </div>
   );
 }
 

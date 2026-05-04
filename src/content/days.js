@@ -108,11 +108,33 @@ export const days = [
   {
     day: 4,
     date: '2026-05-04',
-    type: 'clue',
-    title: 'A Tiny Clue',
+    type: 'letter',
+    title: 'A Monday Kind of Love',
     message:
-      'Not every surprise reveals itself right away. This one is only the beginning of something coming later.',
-    prompt: 'Clue: comfort matters.',
+      'No big plans today. Just work, and the quiet kind of love that shows up in the ordinary days. You go shape minds and I will be here when you get back.',
+    prompt: 'A birthday-month dad joke, delivered with full sincerity:',
+    jokes: [
+      {
+        setup: 'Why was the teacher wearing sunglasses to class?',
+        punchline: 'Because her students were so bright.',
+      },
+      {
+        setup: 'Why did the student eat his homework?',
+        punchline: 'Because the teacher told him it was a piece of cake.',
+      },
+      {
+        setup: 'Why did the teacher go to the beach?',
+        punchline: 'To test the water!',
+      },
+      {
+        setup: 'Why did the math teacher look so sad?',
+        punchline: 'Because she had too many problems.',
+        footer: 'You are welcome. Go be great today.',
+      },
+    ],
+    image: publicAsset('/assets/8731616957018501250.JPG'),
+    imageAlt: 'A photo for Jessica',
+    imageCaption: 'A Monday worth remembering.',
     storyChapter: 4,
   },
   {
