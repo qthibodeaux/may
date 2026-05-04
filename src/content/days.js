@@ -103,6 +103,9 @@ export const days = [
       ],
       footer: 'Prescription may be refilled as needed.',
     },
+    image: publicAsset('/assets/PXL_20250729_200727727.jpeg'),
+    imageAlt: 'A photo for Jessica',
+    imageCaption: 'A little comfort, well earned.',
     storyChapter: 3,
   },
   {
