@@ -523,6 +523,93 @@ h2 {
   font-weight: 800;
 }
 
+/* ── James Gallery ─────────────────────────────────────── */
+.james-gallery {
+  border-top: 1px solid var(--border);
+  margin-top: 24px;
+  padding-top: 24px;
+}
+
+.james-photo-grid {
+  display: grid;
+  gap: 6px;
+  grid-template-columns: repeat(2, 1fr);
+  margin: 14px 0 22px;
+}
+
+.james-photo {
+  aspect-ratio: 1;
+  border-radius: 6px;
+  object-fit: cover;
+  width: 100%;
+}
+
+.james-videos {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.james-video {
+  background: #000;
+  border-radius: 8px;
+  width: 100%;
+}
+
+.james-hint-card {
+  background: linear-gradient(180deg, rgba(244, 210, 122, 0.11), rgba(244, 210, 122, 0.04));
+  border: 1px solid rgba(244, 210, 122, 0.28);
+  border-radius: 10px;
+  padding: 16px 20px;
+}
+
+.james-hint-card p:not(.kicker) {
+  color: var(--text);
+  font-size: 1rem;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.james-photo {
+  cursor: pointer;
+}
+
+.james-lightbox {
+  align-items: center;
+  background: rgba(0, 0, 0, 0.92);
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  left: 0;
+  position: fixed;
+  right: 0;
+  top: 0;
+  z-index: 500;
+}
+
+.james-lightbox img {
+  max-height: 90vh;
+  max-width: 94vw;
+  object-fit: contain;
+  border-radius: 6px;
+}
+
+.james-lightbox-close {
+  background: rgba(255, 255, 255, 0.12);
+  border: 0;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 1.2rem;
+  height: 40px;
+  line-height: 1;
+  position: absolute;
+  right: 16px;
+  top: 16px;
+  width: 40px;
+}
+
+/* ── Riddle Card ─────────────────────────────────────────── */
 .riddle-card {
   background: linear-gradient(180deg, rgba(244, 210, 122, 0.11), rgba(244, 210, 122, 0.04));
   border: 1px solid rgba(244, 210, 122, 0.28);
@@ -913,6 +1000,23 @@ figcaption {
   to { transform: rotate(360deg); }
 }
 
+/* Progress bar */
+.reader-progress-bar {
+  height: 3px;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  z-index: 50;
+  background: rgba(255,255,255,0.07);
+}
+
+.reader-progress-fill {
+  background: var(--gold-bright);
+  height: 100%;
+  transition: width 0.35s ease;
+}
+
 /* Overlay */
 .reader-overlay {
   bottom: 0;
@@ -921,10 +1025,21 @@ figcaption {
   flex-direction: column;
   justify-content: space-between;
   left: 0;
+  opacity: 0;
   pointer-events: none;
   position: absolute;
   right: 0;
   top: 0;
+  transition: opacity 0.25s ease;
+}
+
+.reader-overlay.reader-overlay-visible {
+  opacity: 1;
+}
+
+.reader-overlay:not(.reader-overlay-visible) .reader-top-bar,
+.reader-overlay:not(.reader-overlay-visible) .reader-bottom-bar {
+  pointer-events: none;
 }
 
 .reader-top-bar,
@@ -989,11 +1104,24 @@ figcaption {
 }
 
 .reader-page-count {
-  color: var(--muted);
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 80px;
+  text-align: center;
+}
+
+.reader-count-chapter {
+  color: var(--ink);
   font-size: 0.82rem;
   font-weight: 800;
-  min-width: 60px;
-  text-align: center;
+}
+
+.reader-count-global {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 700;
 }
 
 .reader-font-btns {
@@ -1048,14 +1176,6 @@ figcaption {
 }
 
 /* 4-column bottom nav when reader tab is present */
-.bottom-nav {
-  grid-template-columns: repeat(4, 1fr);
-}
-
-.nav-reader-tab {
-  color: var(--gold-bright);
-}
-
 /* ── Reader special pages ───────────────────────────────── */
 
 .reader-page-cover {
@@ -1282,6 +1402,173 @@ figcaption {
 .reader-toc-lock {
   font-size: 0.72rem;
   opacity: 0.6;
+}
+
+/* ── Paragraph interaction states ───────────────────────── */
+.reader-para-hl {
+  background: rgba(244, 194, 60, 0.18);
+  border-radius: 3px;
+  margin-left: -4px;
+  margin-right: -4px;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+.reader-para-pinned {
+  border-left: 2px solid var(--gold-bright);
+  padding-left: 10px;
+}
+
+.reader-note-dot {
+  font-size: 0.72rem;
+  margin-left: 6px;
+  opacity: 0.75;
+  vertical-align: middle;
+}
+
+/* ── Hold menu ───────────────────────────────────────────── */
+.reader-hold-backdrop {
+  bottom: 0;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  z-index: 300;
+}
+
+.reader-hold-menu {
+  background: #1c1510;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+  overflow: hidden;
+  position: absolute;
+  width: 200px;
+}
+
+.reader-hold-action {
+  align-items: center;
+  background: transparent;
+  border: none;
+  border-top: 1px solid var(--border);
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  font-size: 0.88rem;
+  font-weight: 700;
+  gap: 10px;
+  padding: 13px 16px;
+  text-align: left;
+  width: 100%;
+}
+
+.reader-hold-action:first-child {
+  border-top: none;
+}
+
+.reader-hold-action:active {
+  background: rgba(244,210,122,0.08);
+}
+
+.reader-hold-action.active {
+  color: var(--gold-bright);
+}
+
+.reader-hold-icon {
+  font-size: 1rem;
+  opacity: 0.7;
+  width: 18px;
+  text-align: center;
+}
+
+/* ── Note sheet ──────────────────────────────────────────── */
+.reader-note-sheet {
+  background: rgba(0,0,0,0.55);
+  bottom: 0;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  z-index: 300;
+}
+
+.reader-note-panel {
+  background: #18130c;
+  border-radius: 16px 16px 0 0;
+  border-top: 1px solid var(--border);
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  left: 0;
+  padding: 0 20px 28px;
+  position: absolute;
+  right: 0;
+}
+
+.reader-note-header {
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  font-size: 0.82rem;
+  font-weight: 900;
+  justify-content: space-between;
+  letter-spacing: 0.1em;
+  padding: 16px 0;
+  text-transform: uppercase;
+}
+
+.reader-note-quote {
+  border-left: 2px solid var(--gold);
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-style: italic;
+  line-height: 1.6;
+  margin: 0;
+  padding-left: 12px;
+}
+
+.reader-note-textarea {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  padding: 12px;
+  resize: none;
+  width: 100%;
+}
+
+.reader-note-textarea:focus {
+  border-color: var(--gold);
+  outline: none;
+}
+
+.reader-note-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.reader-note-btn {
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 800;
+  padding: 10px 20px;
+}
+
+.reader-note-cancel {
+  background: rgba(255,255,255,0.07);
+  color: var(--muted);
+}
+
+.reader-note-save {
+  background: var(--gold-bright);
+  color: #0a0703;
 }
 
 @media (min-width: 760px) {

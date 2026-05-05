@@ -143,11 +143,24 @@ export const days = [
   {
     day: 5,
     date: '2026-05-05',
-    type: 'gift',
-    title: 'Little Gift Energy',
+    type: 'memory',
+    title: 'Someone Has Something to Say',
     message:
-      'A small birthday-month perk is waiting today. The details can be swapped in when the plan is final.',
-    prompt: 'Redeemable today: one no-questions-asked favorite snack run.',
+      'This page was not made by your husband. Someone else had something to say about you, and he said it loud.',
+    riddle: {
+      question:
+        'He came last, but he has never been an afterthought. The youngest one, the one who keeps everyone on their toes, the one who somehow always has a move nobody saw coming. He loves loud even when he does not say much. He put this page together because his mom deserves to be celebrated by the people who love her most. Who made this?',
+      clues: [
+        'Clue 1: He shares your last name.',
+        'Clue 2: He is the baby of the family \u2014 and he owns it.',
+      ],
+      answers: ['james', 'myson', 'my son', 'myboy', 'my boy', 'mykid', 'my kid', 'son', 'james thibodeaux', 'jamesthibodeaux'],
+      successTitle: 'That\u2019s my boy.',
+      successMessage: 'James put this together. Every photo, every memory, and tonight \u2014 all him.',
+      jamesGallery: true,
+      kicker: 'Figure out who made this page',
+    },
+    storyNote: 'No new chapter today \u2014 James took over the whole page. Honestly, fair.',
     storyChapter: 5,
     hasPlan: true,
   },

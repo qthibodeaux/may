@@ -204,11 +204,17 @@ function DayView({ day, todayKey }) {
 
           <article className="story-callout">
             <p className="kicker">Bae&apos;s Anatomy</p>
-            <h2>{chapter?.title || `Chapter ${day.storyChapter}`}</h2>
-            <p>A new chapter unlocked with today&apos;s page.</p>
-            <a className="secondary-action" href={`#/story/${day.storyChapter}`}>
-              Read Chapter {day.storyChapter}
-            </a>
+            {day.storyNote ? (
+              <p>{day.storyNote}</p>
+            ) : (
+              <>
+                <h2>{chapter?.title || `Chapter ${day.storyChapter}`}</h2>
+                <p>A new chapter unlocked with today&apos;s page.</p>
+                <a className="secondary-action" href={`#/story/${day.storyChapter}`}>
+                  Read Chapter {day.storyChapter}
+                </a>
+              </>
+            )}
           </article>
         </>
       )}
@@ -294,19 +300,21 @@ function RiddleReveal({ riddle }) {
   const [guess, setGuess] = useState('');
   const [showClues, setShowClues] = useState(false);
   const [attempted, setAttempted] = useState(false);
-  const normalizedGuess = normalizeGuess(guess);
+  const [solved, setSolved] = useState(false);
   const acceptedAnswers = riddle.answers.map(normalizeGuess);
-  const solved = acceptedAnswers.includes(normalizedGuess);
   const showMiss = attempted && guess.trim() && !solved;
 
   function checkGuess(event) {
     event.preventDefault();
     setAttempted(true);
+    if (acceptedAnswers.includes(normalizeGuess(guess))) {
+      setSolved(true);
+    }
   }
 
   return (
     <div className="riddle-card">
-      <p className="kicker">Tonight&apos;s riddle</p>
+      <p className="kicker">{riddle.kicker || 'Tonight\'s riddle'}</p>
       <p className="riddle-question">{riddle.question}</p>
       <form className="guess-form" onSubmit={checkGuess}>
         <label htmlFor="day-riddle-guess">Your guess</label>
@@ -339,9 +347,12 @@ function RiddleReveal({ riddle }) {
               <p>{riddle.successMessage}</p>
             </>
           )}
-          <a className="secondary-action" href={riddle.revealUrl} target="_blank" rel="noreferrer">
-            {riddle.revealLabel}
-          </a>
+          {riddle.revealUrl && (
+            <a className="secondary-action" href={riddle.revealUrl} target="_blank" rel="noreferrer">
+              {riddle.revealLabel}
+            </a>
+          )}
+          {riddle.jamesGallery && <JamesGallery />}
         </div>
       )}
     </div>
@@ -403,7 +414,7 @@ function StoryIndex({ todayKey }) {
           return (
             <a
               className={`chapter-row ${locked ? 'locked' : ''}`}
-              href={locked ? '#/story' : `#/story/${chapter.chapter}`}
+              href={locked ? '#/reader' : `#/story/${chapter.chapter}`}
               key={chapter.chapter}
             >
               <span>Chapter {chapter.chapter}</span>
@@ -420,7 +431,7 @@ function ChapterView({ chapter, todayKey }) {
   const locked = chapter.date > todayKey;
   return (
     <section className="detail-page">
-      <a className="back-link" href="#/story">
+      <a className="back-link" href="#/reader">
         Back to book
       </a>
       {locked ? (
@@ -487,6 +498,16 @@ function saveBookmark(chapterNum, fontSize) {
 function loadBookmark() {
   try { return JSON.parse(localStorage.getItem(BOOKMARK_KEY)) ?? null; } catch { return null; }
 }
+
+const HIGHLIGHTS_KEY = 'reader-highlights';
+const NOTES_KEY = 'reader-notes';
+const PINS_KEY = 'reader-pins';
+function loadHighlights() { try { return new Set(JSON.parse(localStorage.getItem(HIGHLIGHTS_KEY)) ?? []); } catch { return new Set(); } }
+function saveHighlights(s) { try { localStorage.setItem(HIGHLIGHTS_KEY, JSON.stringify([...s])); } catch {} }
+function loadNotes() { try { return JSON.parse(localStorage.getItem(NOTES_KEY)) ?? {}; } catch { return {}; } }
+function saveNotes(o) { try { localStorage.setItem(NOTES_KEY, JSON.stringify(o)); } catch {} }
+function loadPins() { try { return new Set(JSON.parse(localStorage.getItem(PINS_KEY)) ?? []); } catch { return new Set(); } }
+function savePins(s) { try { localStorage.setItem(PINS_KEY, JSON.stringify([...s])); } catch {} }
 const V_PAD = 128;
 
 function splitSentences(text) {
@@ -586,6 +607,11 @@ function ReaderView({ todayKey }) {
   const [tocOpen, setTocOpen] = useState(false);
   const [dragX, setDragX] = useState(0);
   const [snapping, setSnapping] = useState(false);
+  const [holdMenu, setHoldMenu] = useState(null); // { x, y, paraText, chapterNum }
+  const [highlights, setHighlights] = useState(() => loadHighlights());
+  const [notes, setNotes] = useState(() => loadNotes());
+  const [pins, setPins] = useState(() => loadPins());
+  const [noteSheet, setNoteSheet] = useState(null); // { paraText, chapterNum, draft }
 
   const shellRef = useRef(null);
   const touchStartX = useRef(null);
@@ -594,8 +620,13 @@ function ReaderView({ todayKey }) {
   const pageIndexRef = useRef(pageIndex);
   const bookRef = useRef(book);
   const bookmarkApplied = useRef(false);
+  const overlayTimerRef = useRef(null);
+  const overlayVisibleRef = useRef(false);
+  const holdTimerRef = useRef(null);
   useEffect(() => { pageIndexRef.current = pageIndex; }, [pageIndex]);
   useEffect(() => { bookRef.current = book; }, [book]);
+  useEffect(() => { overlayVisibleRef.current = overlayVisible; }, [overlayVisible]);
+  useEffect(() => () => { clearTimeout(overlayTimerRef.current); clearTimeout(holdTimerRef.current); }, []);
 
   // Rebuild book whenever font size changes; restore bookmark on first load
   useEffect(() => {
@@ -643,6 +674,17 @@ function ReaderView({ todayKey }) {
       touchStartY.current = e.touches[0].clientY;
       isDragging.current = false;
       setSnapping(false);
+      clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = setTimeout(() => {
+        if (!isDragging.current && touchStartX.current !== null) {
+          const hit = document.elementFromPoint(touchStartX.current, touchStartY.current);
+          const para = hit?.closest('[data-para]');
+          if (para) {
+            setHoldMenu({ x: touchStartX.current, y: touchStartY.current, paraText: para.dataset.para, chapterNum: Number(para.dataset.chapter) });
+            touchStartX.current = null; // prevent tap handler
+          }
+        }
+      }, 600);
     }
 
     function onTouchMove(e) {
@@ -650,13 +692,14 @@ function ReaderView({ todayKey }) {
       const dx = e.touches[0].clientX - touchStartX.current;
       const dy = e.touches[0].clientY - touchStartY.current;
       if (!isDragging.current) {
-        if (Math.abs(dy) > Math.abs(dx)) { touchStartX.current = null; return; }
-        if (Math.abs(dx) > 8) isDragging.current = true;
+        if (Math.abs(dy) > Math.abs(dx)) { touchStartX.current = null; clearTimeout(holdTimerRef.current); return; }
+        if (Math.abs(dx) > 8) { isDragging.current = true; clearTimeout(holdTimerRef.current); }
       }
       if (isDragging.current) { e.preventDefault(); setDragX(dx); }
     }
 
     function onTouchEnd(e) {
+      clearTimeout(holdTimerRef.current);
       if (touchStartX.current === null) return;
       const dx = e.changedTouches[0].clientX - touchStartX.current;
       touchStartX.current = null;
@@ -664,7 +707,7 @@ function ReaderView({ todayKey }) {
       if (!isDragging.current) {
         if (!e.target.closest('button, a')) {
           setTocOpen(false);
-          setOverlayVisible((v) => !v);
+          if (overlayVisibleRef.current) { hideOverlay(); } else { showOverlay(); }
         }
         return;
       }
@@ -674,7 +717,7 @@ function ReaderView({ todayKey }) {
       const totalPages = bookRef.current.pages.length;
       setSnapping(true);
       setDragX(0);
-      setOverlayVisible(false);
+      hideOverlay();
       setTocOpen(false);
 
       if (dx < -threshold && curIndex < totalPages - 1) {
@@ -692,13 +735,63 @@ function ReaderView({ todayKey }) {
       el.removeEventListener('touchstart', onTouchStart);
       el.removeEventListener('touchmove', onTouchMove);
       el.removeEventListener('touchend', onTouchEnd);
+      clearTimeout(holdTimerRef.current);
     };
   }, [book]);
+
+  function handleCopy() {
+    navigator.clipboard.writeText(holdMenu.paraText).catch(() => {});
+    setHoldMenu(null);
+  }
+  function handleHighlight() {
+    setHighlights((prev) => {
+      const next = new Set(prev);
+      if (next.has(holdMenu.paraText)) { next.delete(holdMenu.paraText); } else { next.add(holdMenu.paraText); }
+      saveHighlights(next);
+      return next;
+    });
+    setHoldMenu(null);
+  }
+  function handlePin() {
+    setPins((prev) => {
+      const next = new Set(prev);
+      if (next.has(holdMenu.paraText)) { next.delete(holdMenu.paraText); } else { next.add(holdMenu.paraText); }
+      savePins(next);
+      return next;
+    });
+    setHoldMenu(null);
+  }
+  function handleNote() {
+    setNoteSheet({ paraText: holdMenu.paraText, chapterNum: holdMenu.chapterNum, draft: notes[holdMenu.paraText] ?? '' });
+    setHoldMenu(null);
+  }
+  function handleSaveNote() {
+    const { paraText, draft } = noteSheet;
+    setNotes((prev) => {
+      const next = { ...prev };
+      if (draft.trim()) { next[paraText] = draft.trim(); } else { delete next[paraText]; }
+      saveNotes(next);
+      return next;
+    });
+    setNoteSheet(null);
+  }
+
+  function showOverlay() {
+    setOverlayVisible(true);
+    clearTimeout(overlayTimerRef.current);
+    overlayTimerRef.current = setTimeout(() => setOverlayVisible(false), 4000);
+  }
+
+  function hideOverlay() {
+    setOverlayVisible(false);
+    clearTimeout(overlayTimerRef.current);
+  }
 
   function goToPage(newIdx) {
     setSnapping(true);
     setPageIndex(newIdx);
     setTimeout(() => setSnapping(false), 350);
+    if (overlayVisibleRef.current) showOverlay(); // reset auto-hide timer
   }
 
   if (unlockedChapters.length === 0) {
@@ -717,12 +810,32 @@ function ReaderView({ todayKey }) {
   const currentChapterTitle = currentPage?.chapterTitle ?? null;
   const currentChapterNum = currentPage?.chapter ?? null;
 
+  let chapterPageNum = null;
+  let chapterPageTotal = null;
+  if (currentChapterNum && book) {
+    const chapterStarts = Object.values(book.tocMap).sort((a, b) => a - b);
+    const myStart = book.tocMap[currentChapterNum];
+    const nextStart = chapterStarts.find((s) => s > myStart);
+    const myEnd = nextStart !== undefined ? nextStart - 1 : totalPages - 1;
+    chapterPageNum = pageIndex - myStart + 1;
+    chapterPageTotal = myEnd - myStart + 1;
+  }
+
+  const progressPct = totalPages > 1 ? (pageIndex / (totalPages - 1)) * 100 : 0;
+
   const visibleIndices = pages
     ? [pageIndex - 1, pageIndex, pageIndex + 1].filter((i) => i >= 0 && i < totalPages)
     : [];
 
   return (
     <div className="reader-shell" ref={shellRef}>
+
+      {/* Progress bar */}
+      {book && (
+        <div className="reader-progress-bar">
+          <div className="reader-progress-fill" style={{ width: `${progressPct}%` }} />
+        </div>
+      )}
 
       {/* Spinner */}
       {!book && (
@@ -772,11 +885,81 @@ function ReaderView({ todayKey }) {
             return (
               <div key={idx} className={cls} style={{ transform: `translateX(${offset}px)`, fontSize: FONT_SIZES[fontSize] }}>
                 <div className="reader-text">
-                  {pg.paragraphs.map((para, i) => <p key={i}>{para}</p>)}
+                  {pg.paragraphs.map((para, i) => (
+                    <p
+                      key={i}
+                      data-para={para}
+                      data-chapter={pg.chapter}
+                      className={[
+                        highlights.has(para) ? 'reader-para-hl' : '',
+                        notes[para] ? 'reader-para-noted' : '',
+                        pins.has(para) ? 'reader-para-pinned' : '',
+                      ].filter(Boolean).join(' ') || undefined}
+                    >
+                      {para}
+                      {notes[para] && <span className="reader-note-dot">💬</span>}
+                    </p>
+                  ))}
                 </div>
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Hold menu */}
+      {holdMenu && (() => {
+        const menuW = 200;
+        const left = Math.max(12, Math.min(holdMenu.x - menuW / 2, window.innerWidth - menuW - 12));
+        const top = Math.max(60, holdMenu.y - 224);
+        const isHl = highlights.has(holdMenu.paraText);
+        const isPinned = pins.has(holdMenu.paraText);
+        const hasNote = !!notes[holdMenu.paraText];
+        return (
+          <div className="reader-hold-backdrop" onClick={() => setHoldMenu(null)}>
+            <div className="reader-hold-menu" style={{ left, top }} onClick={(e) => e.stopPropagation()}>
+              <button type="button" className="reader-hold-action" onClick={handleCopy}>
+                <span className="reader-hold-icon">⎘</span>Copy
+              </button>
+              <button type="button" className={`reader-hold-action${isHl ? ' active' : ''}`} onClick={handleHighlight}>
+                <span className="reader-hold-icon">◈</span>{isHl ? 'Remove highlight' : 'Highlight'}
+              </button>
+              <button type="button" className={`reader-hold-action${hasNote ? ' active' : ''}`} onClick={handleNote}>
+                <span className="reader-hold-icon">✎</span>{hasNote ? 'Edit note' : 'Add note'}
+              </button>
+              <button type="button" className={`reader-hold-action${isPinned ? ' active' : ''}`} onClick={handlePin}>
+                <span className="reader-hold-icon">⊕</span>{isPinned ? 'Unpin' : 'Pin'}
+              </button>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Note sheet */}
+      {noteSheet && (
+        <div className="reader-note-sheet" onClick={() => setNoteSheet(null)}>
+          <div className="reader-note-panel" onClick={(e) => e.stopPropagation()}>
+            <div className="reader-note-header">
+              <span>Your note</span>
+              <button type="button" className="reader-toc-close" onClick={() => setNoteSheet(null)}>✕</button>
+            </div>
+            <p className="reader-note-quote">
+              {noteSheet.paraText.length > 120 ? noteSheet.paraText.slice(0, 120) + '…' : noteSheet.paraText}
+            </p>
+            <textarea
+              className="reader-note-textarea"
+              value={noteSheet.draft}
+              onChange={(e) => setNoteSheet((n) => ({ ...n, draft: e.target.value }))}
+              placeholder="Write your note here…"
+              rows={4}
+              // eslint-disable-next-line jsx-a11y/no-autofocus
+              autoFocus
+            />
+            <div className="reader-note-actions">
+              <button type="button" className="reader-note-btn reader-note-cancel" onClick={() => setNoteSheet(null)}>Cancel</button>
+              <button type="button" className="reader-note-btn reader-note-save" onClick={handleSaveNote}>Save</button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -818,8 +1001,8 @@ function ReaderView({ todayKey }) {
       )}
 
       {/* Overlay */}
-      {overlayVisible && book && (
-        <div className="reader-overlay">
+      {book && (
+        <div className={`reader-overlay${overlayVisible ? ' reader-overlay-visible' : ''}`}>
           <div className="reader-top-bar">
             <a className="reader-back-btn" href="#/">← Back</a>
             <span className="reader-chapter-label">
@@ -847,7 +1030,12 @@ function ReaderView({ todayKey }) {
                 disabled={pageIndex === 0}
                 onClick={() => goToPage(Math.max(pageIndex - 1, 0))}
               >‹</button>
-              <span className="reader-page-count">{pageIndex + 1} / {totalPages}</span>
+              <div className="reader-page-count">
+                {currentChapterNum
+                  ? <span className="reader-count-chapter">Ch. {currentChapterNum} · {chapterPageNum} of {chapterPageTotal}</span>
+                  : null}
+                <span className="reader-count-global">{pageIndex + 1} / {totalPages}</span>
+              </div>
               <button
                 type="button"
                 className="reader-nav-btn"
@@ -876,9 +1064,8 @@ function BottomNav() {
   return (
     <nav className="bottom-nav" aria-label="Main navigation">
       <a href="#/">Path</a>
-      <a href="#/story">Book</a>
+      <a href="#/reader">Book</a>
       <a href="#/memories">Photos</a>
-      <a href="#/reader" className="nav-reader-tab">Read ✦</a>
     </nav>
   );
 }
@@ -888,6 +1075,77 @@ function normalizeGuess(value) {
     .toLowerCase()
     .replace(/[^a-z0-9]/g, '')
     .replace(/^torchystacos$/, 'torchystacos');
+}
+
+function JamesGallery() {
+  const base = `${process.env.PUBLIC_URL}/assets/james`;
+  const [lightbox, setLightbox] = useState(null);
+  const photos = [
+    '2238558191496470895.jpg',
+    'Blink_0b222966-d66b-467e-af49-badf5cb0d4a0_9_2013-06-23.jpg',
+    'IMG_0041.JPEG',
+    'IMG_1229.JPG',
+    'IMG_2156.JPG',
+    'IMG_2291.JPG',
+    'IMG_3573.JPG',
+    'IMG_3621.JPG',
+    'IMG_4557.JPG',
+    'IMG_5334.JPG',
+    'IMG_5613.JPG',
+    'IMG_7150.JPG',
+    'IMG_8365.JPG',
+    'jamestwobw.jpg',
+    'Screenshot 2023-08-09 055219.png',
+    'Screenshot 2023-08-09 055417.png',
+    'Screenshot 2023-08-09 055455.png',
+    'Screenshot 2023-08-09 055544.png',
+    'Screenshot 2023-08-09 060500.png',
+    'WP_20130618_015.jpg',
+    'WP_20130702_042.jpg',
+    'WP_20130806_012.jpg',
+    'WP_20130820_012.jpg',
+  ];
+  const videos = [
+    '4368984390229108283.mp4',
+    'IMG_2443.MOV',
+  ];
+
+  return (
+    <div className="james-gallery">
+      <p className="kicker">James</p>
+      <h2>A few favorites.</h2>
+      <div className="james-photo-grid">
+        {photos.map((f) => (
+          <img
+            key={f}
+            className="james-photo"
+            src={`${base}/${encodeURIComponent(f)}`}
+            alt="James"
+            loading="lazy"
+            onClick={() => setLightbox(`${base}/${encodeURIComponent(f)}`)}
+            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+          />
+        ))}
+      </div>
+      {lightbox && (
+        <div className="james-lightbox" onClick={() => setLightbox(null)}>
+          <button className="james-lightbox-close" onClick={() => setLightbox(null)} aria-label="Close">✕</button>
+          <img src={lightbox} alt="James enlarged" onClick={(e) => e.stopPropagation()} />
+        </div>
+      )}
+      <div className="james-videos">
+        {videos.map((f) => (
+          <video key={f} className="james-video" controls playsInline onError={(e) => { e.currentTarget.style.display = 'none'; }}>
+            <source src={`${base}/${encodeURIComponent(f)}`} />
+          </video>
+        ))}
+      </div>
+      <div className="james-hint-card">
+        <p className="kicker">Tonight</p>
+        <p>Tonight is James&#39;s call. He has been thinking about it, and you are the person he wants to share it with. Just say yes and let him lead.</p>
+      </div>
+    </div>
+  );
 }
 
 function formatDate(dateKey) {
