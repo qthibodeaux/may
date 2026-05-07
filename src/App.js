@@ -103,6 +103,21 @@ function SiteHeader() {
 function Home({ todayKey, currentDay }) {
   const availableCount = days.filter((day) => day.date <= todayKey).length;
   const todayStatus = dayStatus(currentDay, todayKey);
+  const pathDays = days.filter((day) => day.day !== 6 && day.day !== 7);
+  const daySix = days.find((day) => day.day === 6);
+  const daySeven = days.find((day) => day.day === 7);
+  const nextDay = days.find((day) => day.date > todayKey);
+  const todayCardRef = useRef(null);
+
+  function setTodayCardNode(node) {
+    if (node) {
+      todayCardRef.current = node;
+    }
+  }
+
+  function jumpToToday() {
+    todayCardRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }
 
   return (
     <>
@@ -117,10 +132,10 @@ function Home({ todayKey, currentDay }) {
         </div>
         <div className="today-panel">
           <span className="stamp">Day {currentDay.day} of 17</span>
-          <h2>{todayStatus === 'locked' ? 'The scrapbook opens May 1.' : "Today's page is ready."}</h2>
-          <a className="primary-action" href={`#/day/${currentDay.day}`}>
-            Open Today&apos;s Surprise
-          </a>
+          <h2>{todayStatus === 'locked' ? 'The scrapbook opens May 1.' : 'Today\'s moment is waiting in the scrapbook.'}</h2>
+          <button className="primary-action" type="button" onClick={jumpToToday}>
+            Take Me Thru Dere!
+          </button>
         </div>
       </section>
 
@@ -137,22 +152,72 @@ function Home({ todayKey, currentDay }) {
           <h2>Open one page each day</h2>
         </div>
         <div className="scrapbook-path">
-          {days.map((day) => (
-            <DayCard key={day.day} day={day} status={dayStatus(day, todayKey)} />
-          ))}
+          {pathDays.map((day) =>
+            day.day === 8 && daySix && daySeven ? (
+              [
+                <CombinedDayCard
+                  key="day-6-7"
+                  firstDay={daySix}
+                  secondDay={daySeven}
+                  status={dayStatus(daySeven, todayKey)}
+                  scrollRef={dayStatus(daySeven, todayKey) === 'today' ? setTodayCardNode : undefined}
+                />,
+                <DayCard
+                  key={day.day}
+                  day={day}
+                  status={dayStatus(day, todayKey)}
+                  isNext={nextDay?.day === day.day}
+                  scrollRef={dayStatus(day, todayKey) === 'today' ? setTodayCardNode : undefined}
+                />,
+              ]
+            ) : (
+              <DayCard
+                key={day.day}
+                day={day}
+                status={dayStatus(day, todayKey)}
+                isNext={nextDay?.day === day.day}
+                scrollRef={dayStatus(day, todayKey) === 'today' ? setTodayCardNode : undefined}
+              />
+            )
+          )}
         </div>
       </section>
     </>
   );
 }
 
-function DayCard({ day, status }) {
+function CombinedDayCard({ firstDay, secondDay, status, scrollRef }) {
   const locked = status === 'locked';
   return (
     <a
-      className={`day-card ${status} ${day.isFinale ? 'finale' : ''} ${day.hasPlan ? 'planned' : ''}`}
+      className={`day-card combined-day-card ${status} ${secondDay.hasPlan ? 'planned' : ''}`}
+      href={locked ? '#/' : `#/day/${secondDay.day}`}
+      aria-disabled={locked}
+      ref={scrollRef}
+    >
+      {secondDay.hasPlan && <span className="plan-indicator" aria-label="Something special is planned" />}
+      <span className="combined-day-label combined-day-six">Day {firstDay.day}</span>
+      <span className="combined-day-label combined-day-seven">Day {secondDay.day}</span>
+      {locked ? (
+        <span className="locked-label">Something is waiting</span>
+      ) : (
+        <>
+          <strong>Six Seven</strong>
+          <span className="day-date">{formatDate(firstDay.date)} + {formatDate(secondDay.date)}</span>
+        </>
+      )}
+    </a>
+  );
+}
+
+function DayCard({ day, status, scrollRef, isNext }) {
+  const locked = status === 'locked';
+  return (
+    <a
+      className={`day-card ${status} ${day.isFinale ? 'finale' : ''} ${day.hasPlan ? 'planned' : ''} ${isNext ? 'next-up' : ''}`}
       href={locked ? '#/' : `#/day/${day.day}`}
       aria-disabled={locked}
+      ref={scrollRef}
     >
       {day.hasPlan && <span className="plan-indicator" aria-label="Something special is planned" />}
       <span className="day-number">Day {day.day}</span>
@@ -197,28 +262,240 @@ function DayView({ day, todayKey }) {
             )}
             <p className="message">{day.message}</p>
             {day.prompt && <div className="mission-box">{day.prompt}</div>}
+            {(day.day === 6 || day.tileReveal) && (
+              <TileReveal 
+                tileReveal={day.tileReveal || {
+                  title: 'Unscramble the sequence',
+                  image: day.image,
+                  caption: 'Sequence complete.',
+                  joke: 'Now you are ready for the next page.'
+                }} 
+              />
+            )}
+            {day.crownReveal && <CrownReveal crownReveal={day.crownReveal} />}
             {day.jokes && <JokeCard jokes={day.jokes} />}
             {day.choiceReveal && <ChoiceReveal choiceReveal={day.choiceReveal} />}
             {day.riddle && <RiddleReveal riddle={day.riddle} />}
           </article>
 
-          <article className="story-callout">
-            <p className="kicker">Bae&apos;s Anatomy</p>
-            {day.storyNote ? (
-              <p>{day.storyNote}</p>
-            ) : (
-              <>
-                <h2>{chapter?.title || `Chapter ${day.storyChapter}`}</h2>
-                <p>A new chapter unlocked with today&apos;s page.</p>
-                <a className="secondary-action" href={`#/story/${day.storyChapter}`}>
-                  Read Chapter {day.storyChapter}
-                </a>
-              </>
-            )}
-          </article>
+          {!day.skipStoryCallout && (
+            <article className="story-callout">
+              <p className="kicker">Bae&apos;s Anatomy</p>
+              {day.storyNote ? (
+                <p>{day.storyNote}</p>
+              ) : (
+                <>
+                  <h2>{chapter?.title || `Chapter ${day.storyChapter}`}</h2>
+                  <p>A new chapter unlocked with today&apos;s page.</p>
+                  <a className="secondary-action" href={`#/story/${day.storyChapter}`}>
+                    Read Chapter {day.storyChapter}
+                  </a>
+                </>
+              )}
+            </article>
+          )}
         </>
       )}
     </section>
+  );
+}
+
+function TileReveal({ tileReveal }) {
+  const [tiles, setTiles] = useState(() => {
+    const initial = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+    let shuffled = [...initial];
+    // Keep shuffling until it's not the solved state
+    while (shuffled.every((val, i) => val === initial[i])) {
+      shuffled = shuffled.sort(() => Math.random() - 0.5);
+    }
+    return shuffled;
+  });
+
+  const [selectedIndex, setSelectedIndex] = useState(null);
+  const isSolved = tiles.every((val, i) => val === i);
+
+  function handleTileClick(index) {
+    if (isSolved) return;
+    
+    // Freeze: If this tile is already in the correct position, don't allow selecting it
+    if (tiles[index] === index) return;
+
+    if (selectedIndex === null) {
+      setSelectedIndex(index);
+    } else {
+      if (selectedIndex === index) {
+        setSelectedIndex(null);
+        return;
+      }
+      
+      const newTiles = [...tiles];
+      const temp = newTiles[selectedIndex];
+      newTiles[selectedIndex] = newTiles[index];
+      newTiles[index] = temp;
+      
+      setTiles(newTiles);
+      setSelectedIndex(null);
+    }
+  }
+
+  return (
+    <div className="tile-reveal-card">
+      <p className="kicker">Photo Puzzle</p>
+      <h2>{tileReveal.title}</h2>
+      
+      <div className={`tile-grid ${isSolved ? 'solved' : ''}`} style={{ position: 'relative' }}>
+        {isSolved ? (
+          <div className="full-photo-reveal animate-in" style={{ width: '100%', aspectRatio: '1' }}>
+            <img 
+              src={tileReveal.image} 
+              alt={tileReveal.caption} 
+              style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px' }}
+            />
+          </div>
+        ) : (
+          tiles.map((tileValue, currentIndex) => {
+            const col = tileValue % 3;
+            const row = Math.floor(tileValue / 3);
+            const isCorrect = tileValue === currentIndex;
+            
+            return (
+              <button
+                key={currentIndex}
+                type="button"
+                className={`puzzle-tile ${selectedIndex === currentIndex ? 'active' : ''} ${isCorrect ? 'frozen' : ''}`}
+                onClick={() => handleTileClick(currentIndex)}
+                disabled={isCorrect && !isSolved}
+                style={{
+                  backgroundImage: `url("${tileReveal.image}")`,
+                  backgroundPosition: `${col * 50}% ${row * 50}%`,
+                  backgroundSize: '300% 300%'
+                }}
+              />
+            );
+          })
+        )}
+      </div>
+
+      {isSolved && (
+        <div className="reveal-success animate-in" style={{ marginTop: '20px' }}>
+          <p className="success-message" style={{ color: 'var(--gold-bright)', fontWeight: 'bold' }}>
+            {tileReveal.caption}
+          </p>
+          <div className="joke-box" style={{ marginTop: '10px', fontStyle: 'italic', opacity: 0.9 }}>
+            {tileReveal.joke}
+          </div>
+          <button 
+            type="button"
+            className="secondary-action"
+            style={{ marginTop: '20px', width: '100%' }}
+            onClick={() => {
+              const initial = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+              let shuffled;
+              // Ensure we get a fresh, unsolved shuffle every single time
+              do {
+                shuffled = [...initial].sort(() => Math.random() - 0.5);
+              } while (shuffled.every((val, i) => val === initial[i]));
+              
+              setTiles(shuffled);
+              setSelectedIndex(null);
+            }}
+          >
+            Reset Puzzle
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CrownReveal({ crownReveal }) {
+  const gems = [
+    { id: 1, label: 'Kind', color: '#ffd700' },
+    { id: 2, label: 'Hilarious', color: '#ffec8b' },
+    { id: 3, label: 'Resilient', color: '#d8ad45' },
+    { id: 4, label: 'Patient', color: '#f4d27a' },
+    { id: 5, label: 'Brilliant', color: '#fff3c8' },
+  ];
+
+  const [slotted, setSlotted] = useState([]);
+  const complete = slotted.length === gems.length;
+
+  function placeGem(id) {
+    if (slotted.includes(id)) return;
+    setSlotted((prev) => [...prev, id]);
+  }
+
+  return (
+    <div className="crown-reveal-card">
+      <p className="kicker">Tribute to the Queen</p>
+      <h2>{crownReveal.title}</h2>
+      
+      <div className={`crown-container ${complete ? 'complete' : ''}`}>
+        <div className="crown-chassis">
+          {/* Simple SVG for crown outline slots */}
+          <svg viewBox="0 0 200 120" className="crown-svg">
+            <path 
+              d="M20,100 L180,100 L190,40 L150,70 L100,20 L50,70 L10,40 Z" 
+              fill="none" 
+              stroke="var(--gold-soft)" 
+              strokeWidth="2" 
+            />
+            {/* Gem Slots */}
+            {[
+              { x: 30, y: 75 },
+              { x: 65, y: 55 },
+              { x: 100, y: 40 },
+              { x: 135, y: 55 },
+              { x: 170, y: 75 }
+            ].map((slot, i) => (
+              <circle 
+                key={i} 
+                cx={slot.x} 
+                cy={slot.y} 
+                r="8" 
+                fill={slotted.includes(gems[i]?.id) ? gems[i].color : 'rgba(216, 173, 69, 0.1)'}
+                className={slotted.includes(gems[i]?.id) ? 'gem-filled' : 'gem-slot'}
+              />
+            ))}
+          </svg>
+        </div>
+
+        <div className="gem-bank">
+          {gems.map((gem) => {
+            const isSlotted = slotted.includes(gem.id);
+            return (
+              <button
+                key={gem.id}
+                type="button"
+                className={`gem-button ${isSlotted ? 'slotted' : ''}`}
+                onClick={() => placeGem(gem.id)}
+                disabled={isSlotted}
+                style={{ backgroundColor: gem.color }}
+              >
+                <span className="gem-glow" />
+                {isSlotted && <span className="gem-label">{gem.label}</span>}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {complete && (
+        <>
+          <div className="crown-complete animate-in">
+            <h3>{crownReveal.revealTitle}</h3>
+            <p>{crownReveal.reveal}</p>
+          </div>
+          
+          <div className="teaser-box animate-in" style={{ marginTop: '20px', animationDelay: '0.5s' }}>
+            <p className="kicker" style={{ color: 'var(--gold-soft)' }}>Looking Ahead</p>
+            <p style={{ fontStyle: 'italic', fontSize: '0.95rem' }}>
+              Rest up, Your Majesty. We have something very special planned for tomorrow.
+            </p>
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 

@@ -168,19 +168,41 @@ export const days = [
     day: 6,
     date: '2026-05-06',
     type: 'letter',
-    title: 'A Reason I Love You',
+    title: 'Six',
     message:
-      'Reason number six: you make home feel warmer, louder, funnier, and more alive in all the best ways.',
+      'Hold this number for one more page. It is part of the setup.',
+    prompt:
+      'Six is only half the joke.',
     storyChapter: 6,
+    skipStoryCallout: true,
   },
   {
     day: 7,
     date: '2026-05-07',
-    type: 'memory',
-    title: 'Memory Lane',
+    type: 'mission',
+    title: 'Six Seven',
     message:
-      'This page is reserved for a photo and short story from us. Drop the image in later and add the real caption here.',
+      'Some numbers are just numbers. Some numbers become a whole family bit. This page is both.',
+    prompt:
+      'First uncover the photo. Then build the crown.',
+    tileReveal: {
+      title: 'Tap the tiles',
+      image: publicAsset('/assets/67/67.jpeg'),
+      imageAlt: 'Jessica doing the six seven gesture',
+      caption: 'The official 6-7 evidence.',
+      joke:
+        'Why did 6 and 7 show up together? Because even the calendar knew you deserved a little extra today.',
+    },
+    crownReveal: {
+      title: 'Build the crown',
+      prompt: 'Tap every point to light it up.',
+      revealTitle: 'Queen status confirmed.',
+      reveal:
+        'Not because it is birthday month. Not because a crown says so. Because you carry the room, keep the family moving, love hard, laugh loud, and somehow make ordinary days feel chosen.',
+    },
     storyChapter: 7,
+    hasPlan: true,
+    skipStoryCallout: true,
   },
   {
     day: 8,
