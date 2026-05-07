@@ -139,6 +139,18 @@ function Home({ todayKey, currentDay }) {
         </div>
       </section>
 
+      <section className="story-update-note" aria-label="Story update">
+        <div>
+          <p className="kicker">Bae&apos;s Anatomy update</p>
+          <h2>Two new chapters are in the reader.</h2>
+          <p>Saul&apos;s Donkey and The Body Has Many Members just joined the story.</p>
+        </div>
+        <div className="story-update-actions">
+          <a href="#/story/5">Chapter 5</a>
+          <a href="#/story/6">Chapter 6</a>
+        </div>
+      </section>
+
       <section className="progress-strip" aria-label="Birthday progress">
         <span>{availableCount} of 17 unlocked</span>
         <div className="progress-track">
@@ -776,6 +788,14 @@ function loadBookmark() {
   try { return JSON.parse(localStorage.getItem(BOOKMARK_KEY)) ?? null; } catch { return null; }
 }
 
+const READER_HELP_KEY = 'reader-help-dismissed';
+function loadReaderHelpDismissed() {
+  try { return localStorage.getItem(READER_HELP_KEY) === 'yes'; } catch { return false; }
+}
+function saveReaderHelpDismissed() {
+  try { localStorage.setItem(READER_HELP_KEY, 'yes'); } catch {}
+}
+
 const HIGHLIGHTS_KEY = 'reader-highlights';
 const NOTES_KEY = 'reader-notes';
 const PINS_KEY = 'reader-pins';
@@ -889,6 +909,7 @@ function ReaderView({ todayKey }) {
   const [notes, setNotes] = useState(() => loadNotes());
   const [pins, setPins] = useState(() => loadPins());
   const [noteSheet, setNoteSheet] = useState(null); // { paraText, chapterNum, draft }
+  const [readerHelpVisible, setReaderHelpVisible] = useState(() => !loadReaderHelpDismissed());
 
   const shellRef = useRef(null);
   const touchStartX = useRef(null);
@@ -1071,6 +1092,11 @@ function ReaderView({ todayKey }) {
     if (overlayVisibleRef.current) showOverlay(); // reset auto-hide timer
   }
 
+  function dismissReaderHelp() {
+    saveReaderHelpDismissed();
+    setReaderHelpVisible(false);
+  }
+
   if (unlockedChapters.length === 0) {
     return (
       <div className="reader-shell reader-empty">
@@ -1181,6 +1207,21 @@ function ReaderView({ todayKey }) {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {book && readerHelpVisible && (
+        <div className="reader-help-card">
+          <p className="kicker">Reader guide</p>
+          <h2>Tap the page for controls.</h2>
+          <ul>
+            <li>Swipe left or right to turn pages.</li>
+            <li>Tap once to show the top and bottom controls.</li>
+            <li>Use Table of Contents to jump chapters.</li>
+            <li>Use the A buttons to change text size.</li>
+            <li>Press and hold a paragraph to copy, highlight, pin, or add a note.</li>
+          </ul>
+          <button type="button" onClick={dismissReaderHelp}>Got it</button>
         </div>
       )}
 

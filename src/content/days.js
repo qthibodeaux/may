@@ -174,7 +174,6 @@ export const days = [
     prompt:
       'Six is only half the joke.',
     storyChapter: 6,
-    skipStoryCallout: true,
   },
   {
     day: 7,

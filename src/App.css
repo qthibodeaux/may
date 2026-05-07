@@ -89,7 +89,8 @@ h2 {
 .hero,
 .detail-page,
 .path-section,
-.progress-strip {
+.progress-strip,
+.story-update-note {
   max-width: 880px;
   margin: 0 auto;
 }
@@ -170,6 +171,50 @@ h2 {
 .secondary-action {
   background: linear-gradient(135deg, #fff0b8, var(--gold));
   margin-top: 14px;
+}
+
+.story-update-note {
+  align-items: center;
+  background:
+    linear-gradient(90deg, rgba(244, 210, 122, 0.14), transparent 46%),
+    #100d09;
+  border: 1px solid rgba(244, 210, 122, 0.26);
+  border-radius: 8px;
+  box-shadow: 5px 5px 0 rgba(216, 173, 69, 0.1);
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+  padding: 16px;
+}
+
+.story-update-note h2 {
+  color: var(--cream);
+  font-size: 1.16rem;
+  margin: 4px 0 6px;
+}
+
+.story-update-note p:not(.kicker) {
+  color: var(--muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.story-update-actions {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.story-update-actions a {
+  background: rgba(244, 210, 122, 0.08);
+  border: 1px solid rgba(244, 210, 122, 0.34);
+  border-radius: 999px;
+  color: var(--gold-bright);
+  font-size: 0.82rem;
+  font-weight: 900;
+  min-height: 40px;
+  padding: 10px 12px;
+  text-align: center;
 }
 
 .progress-strip {
@@ -1288,6 +1333,48 @@ figcaption {
   background: var(--gold-bright);
   height: 100%;
   transition: width 0.35s ease;
+}
+
+.reader-help-card {
+  background: linear-gradient(180deg, rgba(24, 19, 12, 0.98), rgba(13, 10, 6, 0.98));
+  border: 1px solid rgba(244, 210, 122, 0.3);
+  border-radius: 8px;
+  bottom: 18px;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.48);
+  color: var(--text);
+  cursor: default;
+  left: 16px;
+  padding: 16px;
+  position: absolute;
+  right: 16px;
+  z-index: 80;
+}
+
+.reader-help-card h2 {
+  color: var(--cream);
+  font-size: 1.28rem;
+  margin: 5px 0 10px;
+}
+
+.reader-help-card ul {
+  color: var(--muted);
+  display: grid;
+  gap: 7px;
+  line-height: 1.42;
+  margin: 0;
+  padding-left: 18px;
+}
+
+.reader-help-card button {
+  background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+  border: 0;
+  border-radius: 999px;
+  color: #151008;
+  cursor: pointer;
+  font-weight: 900;
+  margin-top: 14px;
+  min-height: 42px;
+  width: 100%;
 }
 
 /* Overlay */
