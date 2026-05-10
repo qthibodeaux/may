@@ -207,32 +207,39 @@ export const days = [
     day: 8,
     date: '2026-05-08',
     type: 'mission',
-    title: 'You Choose',
+    title: 'Double Date Night',
     message:
-      'Today, you control the plan. The only rule is that it should feel easy and good.',
-    prompt: 'Text me A, B, or C. I will know what to do.',
+      'Friday was for getting out, laughing, eating something good, and having an actual grown-up night with Amanda and Ray. Birthday month needed a night that felt easy, social, and fun.',
+    prompt:
+      'Official recap: good company, no kid logistics for a minute, and one more birthday-month memory added to the list.',
     storyChapter: 8,
     hasPlan: true,
+    skipStoryCallout: true,
   },
   {
     day: 9,
     date: '2026-05-09',
     type: 'clue',
-    title: 'The Second Hint',
+    title: 'A Soft Saturday',
     message:
-      'Another piece of the birthday-month puzzle. Keep this one in your pocket.',
-    prompt: 'Clue: we have been here before, but not like this.',
+      'After a good Friday night, today gets to be quieter. No big production, just a little space to enjoy the weekend and let birthday month keep unfolding.',
+    prompt:
+      'Clue: not every surprise has to be loud. Some of them are better when they sneak up on you.',
     storyChapter: 9,
+    skipStoryCallout: true,
   },
   {
     day: 10,
     date: '2026-05-10',
     type: 'letter',
-    title: 'For the Way You Love',
+    title: "Mother's Day",
     message:
-      'This page is for the way you care for people, remember the details, and make everyone feel claimed.',
+      'Today is Mother\'s Day, so this page belongs to the part of you that gives, remembers, carries, teaches, plans, protects, laughs, corrects, comforts, and somehow still keeps loving everybody through it.',
+    prompt:
+      'No riddle today. Just this: the way you love this family is one of the best things about you.',
     storyChapter: 10,
     hasPlan: true,
+    skipStoryCallout: true,
   },
   {
     day: 11,
@@ -247,12 +254,14 @@ export const days = [
   {
     day: 12,
     date: '2026-05-12',
-    type: 'memory',
-    title: 'Family Album Page',
+    type: 'gift',
+    title: 'Something Is Waiting',
     message:
-      'This page is built for a family photo, a funny caption, and one of those memories that deserves to be kept.',
+      'Today has a surprise tucked inside it. No over-explaining, no hints that ruin it. Just know that something has been planned with you in mind.',
+    prompt: 'Open this one when the day gets there.',
     storyChapter: 12,
     hasPlan: true,
+    skipStoryCallout: true,
   },
   {
     day: 13,
@@ -280,8 +289,11 @@ export const days = [
     type: 'letter',
     title: 'Birthday Weekend Eve',
     message:
-      'This is the page where the weekend starts to feel real. Add the final note once the plan is locked.',
+      'This is the part where birthday month starts leaning into the finale. Tonight has something planned, and the only job is to let yourself enjoy it.',
+    prompt: 'Leave room in the day. That is the clue.',
     storyChapter: 15,
+    hasPlan: true,
+    skipStoryCallout: true,
   },
   {
     day: 16,
